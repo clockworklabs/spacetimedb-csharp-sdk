@@ -1,7 +1,6 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
-using Namespace;
 using Newtonsoft.Json;
 
 namespace SpacetimeDB 
@@ -26,7 +25,6 @@ namespace SpacetimeDB
             writer.WritePropertyName(value.ToString());
             writer.WriteRawValue("{}");
             writer.WriteEndObject();
-
         }
     }
 }

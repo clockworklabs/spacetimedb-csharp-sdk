@@ -1,12 +1,20 @@
 using System;
-using Namespace;
 using Newtonsoft.Json;
 
 namespace SpacetimeDB
 {
     public class SomeWrapperConverter : JsonConverter
     {
-        public override bool CanConvert(Type objectType) => objectType == typeof(SomeWrapper<>);
+        public override bool CanConvert(Type objectType)
+        {
+            if (objectType.IsGenericType)
+            {
+                return objectType.GetGenericTypeDefinition() == typeof(SomeWrapper<>);
+            }
+
+            return false;
+        }
+
 
         public override object ReadJson(
             JsonReader reader,
@@ -21,8 +29,19 @@ namespace SpacetimeDB
         public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
         {
             writer.WriteStartObject();
-            writer.WritePropertyName("some");
-            serializer.Serialize(writer, value);
+            var wrappedValue = value.GetType().GetProperty("Value").GetValue(value);
+
+            if (wrappedValue != null)
+            {
+                writer.WritePropertyName("some");
+                serializer.Serialize(writer, wrappedValue);
+            }
+            else
+            {
+                writer.WritePropertyName("none");
+                writer.WriteRawValue("{}");
+            }
+
             writer.WriteEndObject();
         }
     }
