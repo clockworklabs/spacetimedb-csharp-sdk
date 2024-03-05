@@ -54,7 +54,7 @@ void User_OnInsert(User insertedValue, ReducerEvent? dbEvent)
     }
 }
 
-void User_OnUpdate(User oldValue, User newValue, ReducerEvent dbEvent)
+void User_OnUpdate(User oldValue, User newValue, ReducerEvent? dbEvent)
 {
     if(oldValue.Name != newValue.Name)
     {

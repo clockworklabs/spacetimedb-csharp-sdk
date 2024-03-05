@@ -21,10 +21,10 @@ namespace SpacetimeDB
         public static string GetTokenKey()
         {
             var key = "spacetimedb.identity_token";
-#if UNITY_EDITOR
+    #if UNITY_EDITOR
             // Different editors need different keys
             key += $" - {Application.dataPath}";
-#endif
+    #endif
             return key;
         }
     }
@@ -33,7 +33,7 @@ namespace SpacetimeDB
     {
         protected void Awake()
         {
-            // If you get a compile error on `Reducer`, that means you need to run the SpacetimeDB CLI generate command 
+            // If you get a compile error on `Reducer`, that means you need to run the SpacetimeDB CLI generate command
             SpacetimeDBClient.CreateInstance(new UnityDebugLogger());
         }
 
@@ -45,7 +45,7 @@ namespace SpacetimeDB
         private void Update()
         {
             SpacetimeDBClient.instance.Update();
-        }        
+        }
     }
 }
 #endif

@@ -1,44 +1,75 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System.Runtime.CompilerServices;
 
 namespace SpacetimeDB
 {
-    public static class Utils
+    // Helpful utilities from .NET that don't exist in .NET standard.
+    internal static class NetExtensions
     {
-        public static bool ByteArrayCompare(byte[] a1, byte[] a2)
+        public static T CreateDelegate<T>(this System.Reflection.MethodInfo methodInfo) where T : Delegate
         {
-            if (a1 == null || a2 == null)
-                return a1 == a2;
+            return (T)methodInfo.CreateDelegate(typeof(T));
+        }
 
-            if (a1.Length != a2.Length)
-                return false;
+        public static void AddBytes(this HashCode hashCode, ReadOnlySpan<byte> value)
+        {
+            foreach (var b in value)
+            {
+                hashCode.Add(b);
+            }
+        }
 
-            for (int i = 0; i < a1.Length; i++)
-                if (a1[i] != a2[i])
-                    return false;
+        public static class Convert
+        {
+            public static string ToHexString(byte[] bytes) => BitConverter.ToString(bytes).Replace("-", "");
+        }
 
-            return true;
+        public static class Random
+        {
+            public static System.Random Shared = new();
         }
     }
 
-    public class ByteArrayComparer : IEqualityComparer<byte[]>
+    public readonly struct ByteArrayComparer : IEqualityComparer<byte[]>
     {
-        public bool Equals(byte[] x, byte[] y)
+        public static readonly ByteArrayComparer Instance = new();
+
+        public bool Equals(byte[]? left, byte[]? right)
         {
-            return Utils.ByteArrayCompare(x, y);
+            if (ReferenceEquals(left, right))
+            {
+                return true;
+            }
+
+            if (left is null || right is null || left.Length != right.Length)
+            {
+                return false;
+            }
+
+            return EqualsUnvectorized(left, right);
+
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private static bool EqualsUnvectorized(byte[] left, byte[] right)
+        {
+            for (int i = 0; i < left.Length; i++)
+            {
+                if (left[i] != right[i])
+                {
+                    return false;
+                }
+            }
+
+            return true;
         }
 
         public int GetHashCode(byte[] obj)
         {
-            if (obj == null)
-                return 0;
-            int sum = 0;
-            for (int i = 0; i < obj.Length; i++)
-                sum += obj[i];
-            return sum;
+            var hash = new HashCode();
+            hash.AddBytes(obj);
+            return hash.ToHashCode();
         }
     }
 }

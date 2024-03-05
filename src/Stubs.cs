@@ -1,26 +1,23 @@
-using System.Collections;
-using System.Collections.Generic;
-
 namespace SpacetimeDB
-{    
-    public partial class ReducerEventBase
+{
+    public abstract class ReducerEventBase
     {
-        public string ReducerName { get; private set; }
-        public ulong Timestamp { get; private set; }
-        public SpacetimeDB.Identity Identity { get; private set; }
-        public SpacetimeDB.Address? CallerAddress { get; private set; }
-        public string ErrMessage { get; private set; }
-        public ClientApi.Event.Types.Status Status { get; private set; }
+        public string ReducerName { get; }
+        public ulong Timestamp { get; }
+        public SpacetimeDB.Identity Identity { get; }
+        public SpacetimeDB.Address? CallerAddress { get; }
+        public string ErrMessage { get; }
+        public ClientApi.Event.Types.Status Status { get; }
         protected object Args;
 
-        public ReducerEventBase(string reducerName, ulong timestamp, SpacetimeDB.Identity identity, SpacetimeDB.Address? callerAddress, string errMessage, ClientApi.Event.Types.Status status, object args)
+        public ReducerEventBase(ClientApi.Event dbEvent, object args)
         {
-            ReducerName = reducerName;
-            Timestamp = timestamp;
-            Identity = identity;
-            CallerAddress = callerAddress;
-            ErrMessage = errMessage;
-            Status = status;
+            ReducerName = dbEvent.FunctionCall.Reducer;
+            Timestamp = dbEvent.Timestamp;
+            Identity = Identity.From(dbEvent.CallerIdentity.ToByteArray());
+            CallerAddress = Address.From(dbEvent.CallerAddress.ToByteArray());
+            ErrMessage = dbEvent.Message;
+            Status = dbEvent.Status;
             Args = args;
         }
     }
