@@ -12,11 +12,7 @@
   <ItemGroup>
     <PackageReference Include="Google.Protobuf" Version="3.23.4" />
     <ProjectReference Include="../../../SpacetimeDB.ClientSDK.csproj" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <ProjectReference Include="../../../../SpacetimeDB/crates/bindings-csharp/BSATN.Codegen/Codegen.csproj" OutputItemType="Analyzer" />
-    <ProjectReference Include="../../../../SpacetimeDB/crates/bindings-csharp/BSATN.Runtime/Runtime.csproj" />
+    <ProjectReference Include="../../../../SpacetimeDB/crates/bindings-csharp/BSATN.Codegen/BSATN.Codegen.csproj" OutputItemType="Analyzer" />
   </ItemGroup>
 
   <ItemGroup>
