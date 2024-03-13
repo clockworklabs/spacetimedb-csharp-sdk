@@ -10,10 +10,10 @@ namespace SpacetimeDB
     public class ClientCache
     {
         // (Ab)using generic instantiation for type-based lookup instead of hashmap in static contexts.
-        internal static class TableCacheLookup<T>
+        internal static class TableEntries<T>
             where T: IDatabaseTable
         {
-            public static TableCache? TableCache { get; internal set; }
+            public static readonly Dictionary<byte[], IDatabaseTable> Entries = new (new ByteArrayComparer());
         }
 
         public class TableCache
@@ -22,19 +22,31 @@ namespace SpacetimeDB
             public readonly Func<ByteString, IDatabaseTable> SetAndForgetDecodedValue;
 
             // Maps from primary key to type value
-            public readonly Dictionary<byte[], IDatabaseTable> entries = new (new ByteArrayComparer());
+            public readonly Dictionary<byte[], IDatabaseTable> entries;
 
             public Type ClientTableType { get; }
 
             public string Name => ClientTableType.Name;
 
-            internal TableCache(
+            private TableCache(
                 Type clientTableType,
-                Func<ByteString, IDatabaseTable> decoderFunc
+                Func<ByteString, IDatabaseTable> decoderFunc,
+                Dictionary<byte[], IDatabaseTable> entries
             )
             {
                 ClientTableType = clientTableType;
                 SetAndForgetDecodedValue = decoderFunc;
+                this.entries = entries;
+            }
+
+            public static TableCache Create<T>()
+                where T: IDatabaseTable, IStructuralReadWrite, new()
+            {
+                return new TableCache(
+                    clientTableType: typeof(T),
+                    decoderFunc: bytes => BSATNHelpers.FromProtoBytes<T>(bytes),
+                    entries: TableEntries<T>.Entries
+                );
             }
 
             /// <summary>
@@ -62,19 +74,14 @@ namespace SpacetimeDB
             }
         }
 
-        private readonly ConcurrentDictionary<string, TableCache> tables = new();
+        private readonly Dictionary<string, TableCache> tables = new();
 
         public void AddTable<T>()
             where T: IDatabaseTable, IStructuralReadWrite, new()
         {
             string name = typeof(T).Name;
 
-            var tableCache = TableCacheLookup<T>.TableCache = new TableCache(
-                clientTableType: typeof(T),
-                decoderFunc: bytes => BSATNHelpers.FromProtoBytes<T>(bytes)
-            );
-
-            if (!tables.TryAdd(name, tableCache))
+            if (!tables.TryAdd(name, TableCache.Create<T>()))
             {
                 SpacetimeDBClient.instance.Logger.LogError($"Table with name already exists: {name}");
             }
@@ -91,9 +98,9 @@ namespace SpacetimeDB
             return null;
         }
 
-        public IEnumerable<T> GetObjects<T>() where T: IDatabaseTable => TableCacheLookup<T>.TableCache?.entries.Values.Cast<T>() ?? Enumerable.Empty<T>();
+        public IEnumerable<T> GetObjects<T>() where T: IDatabaseTable => TableEntries<T>.Entries.Values.Cast<T>();
 
-        public int Count<T>() where T: IDatabaseTable => TableCacheLookup<T>.TableCache?.entries.Count ?? 0;
+        public int Count<T>() where T: IDatabaseTable => TableEntries<T>.Entries.Count;
 
         public IEnumerable<string> GetTableNames() => tables.Keys;
 
