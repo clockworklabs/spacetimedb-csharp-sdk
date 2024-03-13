@@ -2,24 +2,20 @@
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 
+#if UNITY_5_3_OR_NEWER
+// This attribute is recognised by C# compilers either way but doesn't exist in Unity runtime.
+namespace System.Runtime.CompilerServices
+{
+    [AttributeUsage(AttributeTargets.Method, AllowMultiple = false)]
+    public sealed class ModuleInitializerAttribute : Attribute { }
+}
+#endif
+
 namespace SpacetimeDB
 {
     // Helpful utilities from .NET that don't exist in .NET standard.
     internal static class NetExtensions
     {
-        public static T CreateDelegate<T>(this System.Reflection.MethodInfo methodInfo) where T : Delegate
-        {
-            return (T)methodInfo.CreateDelegate(typeof(T));
-        }
-
-        public static void AddBytes(this HashCode hashCode, ReadOnlySpan<byte> value)
-        {
-            foreach (var b in value)
-            {
-                hashCode.Add(b);
-            }
-        }
-
         public static class Convert
         {
             public static string ToHexString(byte[] bytes) => BitConverter.ToString(bytes).Replace("-", "");
@@ -67,9 +63,12 @@ namespace SpacetimeDB
 
         public int GetHashCode(byte[] obj)
         {
-            var hash = new HashCode();
-            hash.AddBytes(obj);
-            return hash.ToHashCode();
+            int hash = 17;
+            foreach (byte b in obj)
+            {
+                hash = hash * 31 + b;
+            }
+            return hash;
         }
     }
 }

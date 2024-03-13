@@ -9,6 +9,13 @@ namespace SpacetimeDB
 {
     public class ClientCache
     {
+        // (Ab)using generic instantiation for type-based lookup instead of hashmap in static contexts.
+        internal static class TableCacheLookup<T>
+            where T: IDatabaseTable
+        {
+            public static TableCache? TableCache { get; internal set; }
+        }
+
         public class TableCache
         {
             // The function to use for decoding a type value
@@ -21,22 +28,13 @@ namespace SpacetimeDB
 
             public string Name => ClientTableType.Name;
 
-            private TableCache(
+            internal TableCache(
                 Type clientTableType,
                 Func<ByteString, IDatabaseTable> decoderFunc
             )
             {
                 ClientTableType = clientTableType;
                 SetAndForgetDecodedValue = decoderFunc;
-            }
-
-            public static TableCache Create<T>()
-                where T: IDatabaseTable, IStructuralReadWrite, new()
-            {
-                return new TableCache(
-                    clientTableType: typeof(T),
-                    decoderFunc: bytes => BSATNHelpers.FromProtoBytes<T>(bytes)
-                );
             }
 
             /// <summary>
@@ -62,14 +60,6 @@ namespace SpacetimeDB
                 SpacetimeDBClient.instance.Logger.LogWarning("Deleting value that we don't have (no cached value available)");
                 return false;
             }
-
-            /// <summary>
-            /// Gets a value from the table
-            /// </summary>
-            /// <param name="rowBytes">The primary key that uniquely identifies this row</param>
-            /// <param name="value">Output: the parsed domain type corresponding to the <paramref>rowBytes</paramref>, or <c>null</c> if the row was not present in the cache.</param>
-            /// <returns>True if and only if the value is resident and was stored in <paramref>value</paramref>.</returns>
-            public bool TryGetValue(byte[] rowBytes, out IDatabaseTable? value) => entries.TryGetValue(rowBytes, out value);
         }
 
         private readonly ConcurrentDictionary<string, TableCache> tables = new();
@@ -79,14 +69,15 @@ namespace SpacetimeDB
         {
             string name = typeof(T).Name;
 
-            if (tables.ContainsKey(name))
+            var tableCache = TableCacheLookup<T>.TableCache = new TableCache(
+                clientTableType: typeof(T),
+                decoderFunc: bytes => BSATNHelpers.FromProtoBytes<T>(bytes)
+            );
+
+            if (!tables.TryAdd(name, tableCache))
             {
                 SpacetimeDBClient.instance.Logger.LogError($"Table with name already exists: {name}");
-                return;
             }
-
-            // Initialize this table
-            tables[name] = TableCache.Create<T>();
         }
 
         public TableCache? GetTable(string name)
@@ -100,11 +91,9 @@ namespace SpacetimeDB
             return null;
         }
 
-        public TableCache? GetTable<T>() where T: IDatabaseTable => GetTable(typeof(T).Name);
+        public IEnumerable<T> GetObjects<T>() where T: IDatabaseTable => TableCacheLookup<T>.TableCache?.entries.Values.Cast<T>() ?? Enumerable.Empty<T>();
 
-        public IEnumerable<T> GetObjects<T>() where T: IDatabaseTable => GetTable<T>()?.entries.Values.Cast<T>() ?? Enumerable.Empty<T>();
-
-        public int Count<T>() where T: IDatabaseTable => GetTable<T>()?.entries.Count ?? 0;
+        public int Count<T>() where T: IDatabaseTable => TableCacheLookup<T>.TableCache?.entries.Count ?? 0;
 
         public IEnumerable<string> GetTableNames() => tables.Keys;
 
