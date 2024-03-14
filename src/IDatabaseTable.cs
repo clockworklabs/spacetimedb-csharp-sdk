@@ -33,7 +33,6 @@ namespace SpacetimeDB
         public static event InsertEventHandler? OnInsert;
         public static event DeleteEventHandler? OnBeforeDelete;
         public static event DeleteEventHandler? OnDelete;
-        public static event RowUpdateEventHandler? OnRowUpdate;
 
         // We need this because C# doesn't allow to refer to self type.
         protected abstract T GetThis();
@@ -51,11 +50,6 @@ namespace SpacetimeDB
         public void OnDeleteEvent(ClientApi.Event dbEvent)
         {
             OnDelete?.Invoke(GetThis(), (ReducerEvent?)dbEvent?.FunctionCall.CallInfo);
-        }
-
-        public static void OnRowUpdateEvent(SpacetimeDBClient.TableOp op, IDatabaseTable? oldValue, IDatabaseTable? newValue, ClientApi.Event dbEvent)
-        {
-            OnRowUpdate?.Invoke(op, (T?)oldValue, (T?)newValue, (ReducerEvent?)dbEvent?.FunctionCall.CallInfo);
         }
     }
 
