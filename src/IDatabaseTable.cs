@@ -22,6 +22,11 @@ namespace SpacetimeDB
             return SpacetimeDBClient.clientDB.GetObjects<T>();
         }
 
+        public static IEnumerable<T> Query(Func<T, bool> filter)
+        {
+            return Iter().Where(filter);
+        }
+
         public static int Count()
         {
             return SpacetimeDBClient.clientDB.Count<T>();

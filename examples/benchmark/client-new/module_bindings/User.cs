@@ -44,12 +44,12 @@ namespace SpacetimeDB.Types
 
 		public static IEnumerable<User> FilterByName(string value)
 		{
-			return Iter().Where(x => x.Name == value);
+			return Query(x => x.Name == value);
 		}
 
 		public static IEnumerable<User> FilterByAge(byte value)
 		{
-			return Iter().Where(x => x.Age == value);
+			return Query(x => x.Age == value);
 		}
 
 		public override object GetPrimaryKeyValue() => Id;
