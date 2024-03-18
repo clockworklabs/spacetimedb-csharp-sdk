@@ -9,6 +9,7 @@ static class Program {
         None,
         Subscribe,
         Insert,
+        List,
         Clear,
         Disconnect,
     }
@@ -30,8 +31,8 @@ static class Program {
             leftoverCount--;
             if (leftoverCount == 0) {
                 stopwatch.Stop();
-                Console.WriteLine($"Insertion speed: {count / stopwatch.Elapsed.TotalSeconds:.1} items/sec");
-                nextTask = NextTask.Clear;
+                Console.WriteLine($"Insertion speed: {count / stopwatch.Elapsed.TotalSeconds:N0} items/sec");
+                nextTask = NextTask.List;
             }
         };
 
@@ -39,7 +40,7 @@ static class Program {
             leftoverCount--;
             if (leftoverCount == 0) {
                 stopwatch.Stop();
-                Console.WriteLine($"Deletion speed: {count / stopwatch.Elapsed.TotalSeconds:.1} items/sec");
+                Console.WriteLine($"Deletion speed: {count / stopwatch.Elapsed.TotalSeconds:N0} items/sec");
                 nextTask = NextTask.Disconnect;
             }
         };
@@ -60,7 +61,7 @@ static class Program {
         };
 
         new Thread(() => {
-            client.Connect(AuthToken.Token, "http://localhost:3000", "server");
+            client.Connect(AuthToken.Token, "http://localhost:3000", "benchmark");
             while (nextTask != NextTask.Disconnect) {
                 switch (nextTask) {
                     case NextTask.Subscribe:
@@ -79,6 +80,19 @@ static class Program {
                         for (var i = 0; i < count; i++) {
                             Reducer.Insert(strings[i], (byte)(i % 100));
                         }
+                        break;
+                    case NextTask.List:
+                        stopwatch.Restart();
+                        var localCount = 100;
+                        for (var i = 0; i < localCount; i++) {
+                            // iterate with some arbitrary field filter
+                            foreach (var user in User.FilterByAge(50)) {
+                                GC.KeepAlive(user);
+                            }
+                        }
+                        stopwatch.Stop();
+                        Console.WriteLine($"Query speed: {(count * localCount) / stopwatch.Elapsed.TotalSeconds:N0} items/sec");
+                        nextTask = NextTask.Clear;
                         break;
                     case NextTask.Clear:
                         nextTask = NextTask.None;
