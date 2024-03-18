@@ -10,8 +10,11 @@ using ClientApi;
 namespace SpacetimeDB.Types
 {
 	[SpacetimeDB.Type]
-	public partial class ClearAllArgsStruct
+	public partial class ClearAllArgsStruct : IReducerArgs
 	{
+		ReducerType IReducerArgs.ReducerType => ReducerType.ClearAll;
+		string IReducerArgsBase.ReducerName => "clear_all";
+		bool IReducerArgs.InvokeHandler(ReducerEvent reducerEvent) => Reducer.OnClearAll(reducerEvent, this);
 	}
 
 	public static partial class Reducer
@@ -21,13 +24,12 @@ namespace SpacetimeDB.Types
 
 		public static void ClearAll()
 		{
-			SpacetimeDBClient.instance.InternalCallReducer("clear_all", new ClearAllArgsStruct {  });
+			SpacetimeDBClient.instance.InternalCallReducer(new ClearAllArgsStruct {  });
 		}
 
-		public static bool OnClearAll(ReducerEvent reducerEvent)
+		public static bool OnClearAll(ReducerEvent reducerEvent, ClearAllArgsStruct args)
 		{
 			if (OnClearAllEvent == null) return false;
-			var args = reducerEvent.ClearAllArgs;
 			OnClearAllEvent(
 				reducerEvent
 			);

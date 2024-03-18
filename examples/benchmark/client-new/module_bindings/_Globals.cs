@@ -18,25 +18,44 @@ namespace SpacetimeDB.Types
 		IterAll,
 	}
 
+	public interface IReducerArgs : IReducerArgsBase
+	{
+		ReducerType ReducerType { get; }
+		bool InvokeHandler(ReducerEvent reducerEvent);
+	}
+
 	public partial class ReducerEvent : ReducerEventBase
 	{
-		public ReducerType Reducer { get; }
+		public IReducerArgs Args { get; }
 
-		public ReducerEvent(ReducerType reducer, ClientApi.Event dbEvent, object args) : base(dbEvent, args)
+		public string ReducerName => Args.ReducerName;
+
+		[Obsolete("ReducerType is deprecated, please match directly on type of .Args instead.")]
+		public ReducerType Reducer => Args.ReducerType;
+
+		public ReducerEvent(IReducerArgs args) : base() => Args = args;
+		public ReducerEvent(ClientApi.Event dbEvent, IReducerArgs args) : base(dbEvent) => Args = args;
+
+		public static ReducerEvent? FromDbEvent(ClientApi.Event dbEvent)
 		{
-			Reducer = reducer;
+			var argBytes = dbEvent.FunctionCall.ArgBytes;
+			IReducerArgs? args = dbEvent.FunctionCall.Reducer switch {
+				"clear_all" => BSATNHelpers.FromProtoBytes<ClearAllArgsStruct>(argBytes),
+				"insert" => BSATNHelpers.FromProtoBytes<InsertArgsStruct>(argBytes),
+				"iter_all" => BSATNHelpers.FromProtoBytes<IterAllArgsStruct>(argBytes),
+				_ => null
+			};
+			return args is null ? null : new ReducerEvent(dbEvent, args);
 		}
 
+		[Obsolete("Accessors that implicitly cast `Args` are deprecated, please match `Args` against the desired type explicitly instead.")]
 		public ClearAllArgsStruct ClearAllArgs => (ClearAllArgsStruct)Args;
+		[Obsolete("Accessors that implicitly cast `Args` are deprecated, please match `Args` against the desired type explicitly instead.")]
 		public InsertArgsStruct InsertArgs => (InsertArgsStruct)Args;
+		[Obsolete("Accessors that implicitly cast `Args` are deprecated, please match `Args` against the desired type explicitly instead.")]
 		public IterAllArgsStruct IterAllArgs => (IterAllArgsStruct)Args;
 
-		public override bool InvokeHandler() => Reducer switch {
-			ReducerType.ClearAll => SpacetimeDB.Types.Reducer.OnClearAll(this),
-			ReducerType.Insert => SpacetimeDB.Types.Reducer.OnInsert(this),
-			ReducerType.IterAll => SpacetimeDB.Types.Reducer.OnIterAll(this),
-			_ => false
-		};
+		public override bool InvokeHandler() => Args.InvokeHandler(this);
 	}
 
 	public static class ModuleRegistration
@@ -46,12 +65,7 @@ namespace SpacetimeDB.Types
 		{
 			SpacetimeDBClient.clientDB.AddTable<User>();
 
-			SpacetimeDBClient.SetReducerEventFromDbEvent((dbEvent) => dbEvent.FunctionCall.Reducer switch {
-				"clear_all" => new ReducerEvent(ReducerType.ClearAll, dbEvent, BSATNHelpers.FromProtoBytes<ClearAllArgsStruct>(dbEvent.FunctionCall.ArgBytes)),
-				"insert" => new ReducerEvent(ReducerType.Insert, dbEvent, BSATNHelpers.FromProtoBytes<InsertArgsStruct>(dbEvent.FunctionCall.ArgBytes)),
-				"iter_all" => new ReducerEvent(ReducerType.IterAll, dbEvent, BSATNHelpers.FromProtoBytes<IterAllArgsStruct>(dbEvent.FunctionCall.ArgBytes)),
-				_ => null
-			});
+			SpacetimeDBClient.SetReducerEventFromDbEvent(ReducerEvent.FromDbEvent);
 		}
 	}
 }

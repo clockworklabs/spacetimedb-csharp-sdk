@@ -10,8 +10,12 @@ using ClientApi;
 namespace SpacetimeDB.Types
 {
 	[SpacetimeDB.Type]
-	public partial class InsertArgsStruct
+	public partial class InsertArgsStruct : IReducerArgs
 	{
+		ReducerType IReducerArgs.ReducerType => ReducerType.Insert;
+		string IReducerArgsBase.ReducerName => "insert";
+		bool IReducerArgs.InvokeHandler(ReducerEvent reducerEvent) => Reducer.OnInsert(reducerEvent, this);
+
 		public string Name;
 		public byte Age;
 	}
@@ -23,13 +27,12 @@ namespace SpacetimeDB.Types
 
 		public static void Insert(string name, byte age)
 		{
-			SpacetimeDBClient.instance.InternalCallReducer("insert", new InsertArgsStruct { Name = name, Age = age });
+			SpacetimeDBClient.instance.InternalCallReducer(new InsertArgsStruct { Name = name, Age = age });
 		}
 
-		public static bool OnInsert(ReducerEvent reducerEvent)
+		public static bool OnInsert(ReducerEvent reducerEvent, InsertArgsStruct args)
 		{
 			if (OnInsertEvent == null) return false;
-			var args = reducerEvent.InsertArgs;
 			OnInsertEvent(
 				reducerEvent,
 				args.Name,

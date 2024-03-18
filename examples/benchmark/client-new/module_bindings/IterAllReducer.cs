@@ -10,8 +10,11 @@ using ClientApi;
 namespace SpacetimeDB.Types
 {
 	[SpacetimeDB.Type]
-	public partial class IterAllArgsStruct
+	public partial class IterAllArgsStruct : IReducerArgs
 	{
+		ReducerType IReducerArgs.ReducerType => ReducerType.IterAll;
+		string IReducerArgsBase.ReducerName => "iter_all";
+		bool IReducerArgs.InvokeHandler(ReducerEvent reducerEvent) => Reducer.OnIterAll(reducerEvent, this);
 	}
 
 	public static partial class Reducer
@@ -21,13 +24,12 @@ namespace SpacetimeDB.Types
 
 		public static void IterAll()
 		{
-			SpacetimeDBClient.instance.InternalCallReducer("iter_all", new IterAllArgsStruct {  });
+			SpacetimeDBClient.instance.InternalCallReducer(new IterAllArgsStruct {  });
 		}
 
-		public static bool OnIterAll(ReducerEvent reducerEvent)
+		public static bool OnIterAll(ReducerEvent reducerEvent, IterAllArgsStruct args)
 		{
 			if (OnIterAllEvent == null) return false;
-			var args = reducerEvent.IterAllArgs;
 			OnIterAllEvent(
 				reducerEvent
 			);

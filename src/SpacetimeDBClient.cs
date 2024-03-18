@@ -750,8 +750,8 @@ namespace SpacetimeDB
 
         private void OnMessageReceived(byte[] bytes) => _messageQueue.Add(bytes);
 
-        public void InternalCallReducer<T>(string reducerName, T args)
-            where T : IStructuralReadWrite, new()
+        public void InternalCallReducer<T>(T args)
+            where T : IReducerArgsBase, new()
         {
             if (!webSocket.IsConnected)
             {
@@ -765,7 +765,7 @@ namespace SpacetimeDB
             {
                 FunctionCall = new FunctionCall
                 {
-                    Reducer = reducerName,
+                    Reducer = args.ReducerName,
                     ArgBytes = args.ToProtoBytes(),
                     RequestId = requestId,
                 }
