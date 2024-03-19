@@ -95,6 +95,15 @@ static class Program
         }
 
         {
+            stopwatch.Restart();
+            foreach (var msg in Message.Iter())
+            {
+                GC.KeepAlive(msg);
+            }
+            PrintSpeed("Table iteration speed", "item");
+        }
+
+        {
             var leftoverCount = count;
 
             Message.OnDelete += (message, dbEvent) =>
