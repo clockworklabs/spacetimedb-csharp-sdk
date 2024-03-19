@@ -18,7 +18,7 @@ namespace SpacetimeDB.Types
 		[DataMember(Name = "id")]
 		public uint Id;
 		[DataMember(Name = "name")]
-		public string Name;
+		public string Name = "";
 		[DataMember(Name = "age")]
 		public byte Age;
 

@@ -16,7 +16,7 @@ namespace SpacetimeDB.Types
 		string IReducerArgsBase.ReducerName => "insert";
 		bool IReducerArgs.InvokeHandler(ReducerEvent reducerEvent) => Reducer.OnInsert(reducerEvent, this);
 
-		public string Name;
+		public string Name = "";
 		public byte Age;
 	}
 
