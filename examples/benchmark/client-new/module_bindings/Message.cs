@@ -20,8 +20,6 @@ namespace SpacetimeDB.Types
 		[DataMember(Name = "text")]
 		public string Text = "";
 
-		protected override Message GetThis() => this;
-
 		private static Dictionary<uint, Message> Id_Index = new (16);
 
 		public override void InternalOnValueInserted()
