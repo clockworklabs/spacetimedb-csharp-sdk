@@ -30,13 +30,15 @@ namespace SpacetimeDB
         {
             public Type ClientTableType => typeof(T);
 
+            private static Dictionary<byte[], T> Entries => TableEntries<T>.Entries;
+
             /// <summary>
             /// Inserts the value into the table. There can be no existing value with the provided BSATN bytes.
             /// </summary>
             /// <param name="rowBytes">The BSATN encoded bytes of the row to retrieve.</param>
             /// <param name="value">The parsed AlgebraicValue of the row encoded by the <paramref>rowBytes</paramref>.</param>
             /// <returns>True if the row was inserted, false if the row wasn't inserted because it was a duplicate.</returns>
-            public bool InsertEntry(byte[] rowBytes, IDatabaseTable value) => TableEntries<T>.Entries.TryAdd(rowBytes, (T)value);
+            public bool InsertEntry(byte[] rowBytes, IDatabaseTable value) => Entries.TryAdd(rowBytes, (T)value);
 
             /// <summary>
             /// Deletes a value from the table.
@@ -45,7 +47,7 @@ namespace SpacetimeDB
             /// <returns>True if and only if the value was previously resident and has been deleted.</returns>
             public bool DeleteEntry(byte[] rowBytes)
             {
-                if (TableEntries<T>.Entries.Remove(rowBytes))
+                if (Entries.Remove(rowBytes))
                 {
                     return true;
                 }
@@ -57,7 +59,7 @@ namespace SpacetimeDB
             // The function to use for decoding a type value.
             public IDatabaseTable SetAndForgetDecodedValue(ByteString bytes) => BSATNHelpers.FromProtoBytes<T>(bytes);
 
-            public IEnumerator<KeyValuePair<byte[], IDatabaseTable>> GetEnumerator() => TableEntries<T>.Entries.Select(kv => new KeyValuePair<byte[], IDatabaseTable>(kv.Key, kv.Value)).GetEnumerator();
+            public IEnumerator<KeyValuePair<byte[], IDatabaseTable>> GetEnumerator() => Entries.Select(kv => new KeyValuePair<byte[], IDatabaseTable>(kv.Key, kv.Value)).GetEnumerator();
 
             IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
         }
@@ -85,10 +87,6 @@ namespace SpacetimeDB
             SpacetimeDBClient.instance.Logger.LogError($"We don't know that this table is: {name}");
             return null;
         }
-
-        public IEnumerable<T> GetObjects<T>() where T: IDatabaseTable => TableEntries<T>.Entries.Values;
-
-        public int Count<T>() where T: IDatabaseTable => TableEntries<T>.Entries.Count;
 
         public IEnumerable<ITableCache> GetTables() => tables.Values;
     }

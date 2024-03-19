@@ -21,7 +21,7 @@ namespace SpacetimeDB
 
         public static IEnumerable<T> Iter()
         {
-            return SpacetimeDBClient.clientDB.GetObjects<T>();
+            return ClientCache.TableEntries<T>.Entries.Values;
         }
 
         public static IEnumerable<T> Query(Func<T, bool> filter)
@@ -31,7 +31,7 @@ namespace SpacetimeDB
 
         public static int Count()
         {
-            return SpacetimeDBClient.clientDB.Count<T>();
+            return ClientCache.TableEntries<T>.Entries.Count;
         }
 
         public delegate void InsertEventHandler(T insertedValue, ReducerEvent? dbEvent);
