@@ -30,7 +30,7 @@ namespace SpacetimeDB
 
         public struct DbOp
         {
-            public ClientCache.TableCache table;
+            public ClientCache.ITableCache table;
             public TableOp op;
             public IDatabaseTable newValue;
             public IDatabaseTable oldValue;
@@ -258,7 +258,7 @@ namespace SpacetimeDB
 
                                 if (!hashSet.Add(rowBytes))
                                 {
-                                    logger.LogError($"Multiple of the same insert in the same subscription update: table={table.Name} rowBytes={rowBytes}");
+                                    logger.LogError($"Multiple of the same insert in the same subscription update: table={table.ClientTableType.Name} rowBytes={rowBytes}");
                                 }
                                 else
                                 {
@@ -421,7 +421,7 @@ namespace SpacetimeDB
                             continue;
                         }
 
-                        foreach (var rowBytes in table.entries.Keys.Where(a => !hashSet.Contains(a)))
+                        foreach (var (rowBytes, oldValue) in table.Where(kv => !hashSet.Contains(kv.Key)))
                         {
                             // This is a row that we had before, but we do not have it now.
                             // This must have been a delete.
@@ -430,7 +430,7 @@ namespace SpacetimeDB
                                 table = table,
                                 op = TableOp.Delete,
                                 newValue = null,
-                                oldValue = table.entries[rowBytes],
+                                oldValue = oldValue,
                                 deletedBytes = rowBytes,
                                 insertedBytes = null,
                                 primaryKeyValue = null
