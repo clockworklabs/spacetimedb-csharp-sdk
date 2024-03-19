@@ -14,8 +14,8 @@ namespace SpacetimeDB.Types
 	{
 		None,
 		ClearAll,
-		Insert,
-		IterAll,
+		InsertAll,
+		Noop,
 	}
 
 	public interface IReducerArgs : IReducerArgsBase
@@ -41,8 +41,8 @@ namespace SpacetimeDB.Types
 			var argBytes = dbEvent.FunctionCall.ArgBytes;
 			IReducerArgs? args = dbEvent.FunctionCall.Reducer switch {
 				"clear_all" => BSATNHelpers.FromProtoBytes<ClearAllArgsStruct>(argBytes),
-				"insert" => BSATNHelpers.FromProtoBytes<InsertArgsStruct>(argBytes),
-				"iter_all" => BSATNHelpers.FromProtoBytes<IterAllArgsStruct>(argBytes),
+				"insert_all" => BSATNHelpers.FromProtoBytes<InsertAllArgsStruct>(argBytes),
+				"noop" => BSATNHelpers.FromProtoBytes<NoopArgsStruct>(argBytes),
 				_ => null
 			};
 			return args is null ? null : new ReducerEvent(dbEvent, args);
@@ -51,9 +51,9 @@ namespace SpacetimeDB.Types
 		[Obsolete("Accessors that implicitly cast `Args` are deprecated, please match `Args` against the desired type explicitly instead.")]
 		public ClearAllArgsStruct ClearAllArgs => (ClearAllArgsStruct)Args;
 		[Obsolete("Accessors that implicitly cast `Args` are deprecated, please match `Args` against the desired type explicitly instead.")]
-		public InsertArgsStruct InsertArgs => (InsertArgsStruct)Args;
+		public InsertAllArgsStruct InsertAllArgs => (InsertAllArgsStruct)Args;
 		[Obsolete("Accessors that implicitly cast `Args` are deprecated, please match `Args` against the desired type explicitly instead.")]
-		public IterAllArgsStruct IterAllArgs => (IterAllArgsStruct)Args;
+		public NoopArgsStruct NoopArgs => (NoopArgsStruct)Args;
 
 		public override bool InvokeHandler() => Args.InvokeHandler(this);
 	}
@@ -63,7 +63,7 @@ namespace SpacetimeDB.Types
 		[ModuleInitializer]
 		public static void Register()
 		{
-			SpacetimeDBClient.clientDB.AddTable<User>();
+			SpacetimeDBClient.clientDB.AddTable<Message>();
 
 			SpacetimeDBClient.SetReducerEventFromDbEvent(ReducerEvent.FromDbEvent);
 		}

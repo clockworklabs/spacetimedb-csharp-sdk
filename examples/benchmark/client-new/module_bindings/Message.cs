@@ -13,18 +13,16 @@ namespace SpacetimeDB.Types
 {
 	[SpacetimeDB.Type]
 	[DataContract]
-	public partial class User : SpacetimeDB.DatabaseTableWithPrimaryKey<User, SpacetimeDB.Types.ReducerEvent>
+	public partial class Message : SpacetimeDB.DatabaseTableWithPrimaryKey<Message, SpacetimeDB.Types.ReducerEvent>
 	{
 		[DataMember(Name = "id")]
 		public uint Id;
-		[DataMember(Name = "name")]
-		public string Name = "";
-		[DataMember(Name = "age")]
-		public byte Age;
+		[DataMember(Name = "text")]
+		public string Text = "";
 
-		protected override User GetThis() => this;
+		protected override Message GetThis() => this;
 
-		private static Dictionary<uint, User> Id_Index = new (16);
+		private static Dictionary<uint, Message> Id_Index = new (16);
 
 		public override void InternalOnValueInserted()
 		{
@@ -36,20 +34,15 @@ namespace SpacetimeDB.Types
 			Id_Index.Remove(Id);
 		}
 
-		public static User? FilterById(uint value)
+		public static Message? FilterById(uint value)
 		{
 			Id_Index.TryGetValue(value, out var r);
 			return r;
 		}
 
-		public static IEnumerable<User> FilterByName(string value)
+		public static IEnumerable<Message> FilterByText(string value)
 		{
-			return Query(x => x.Name == value);
-		}
-
-		public static IEnumerable<User> FilterByAge(byte value)
-		{
-			return Query(x => x.Age == value);
+			return Query(x => x.Text == value);
 		}
 
 		public override object GetPrimaryKeyValue() => Id;

@@ -8,26 +8,24 @@ using SpacetimeDB;
 namespace SpacetimeDB.Types
 {
 	[Newtonsoft.Json.JsonObject(Newtonsoft.Json.MemberSerialization.OptIn)]
-	public partial class User : IDatabaseTable
+	public partial class Message : IDatabaseTable
 	{
 		[Newtonsoft.Json.JsonProperty("id")]
 		public uint Id;
-		[Newtonsoft.Json.JsonProperty("name")]
-		public string Name;
-		[Newtonsoft.Json.JsonProperty("age")]
-		public byte Age;
+		[Newtonsoft.Json.JsonProperty("text")]
+		public string Text;
 
-		private static Dictionary<uint, User> Id_Index = new Dictionary<uint, User>(16);
+		private static Dictionary<uint, Message> Id_Index = new Dictionary<uint, Message>(16);
 
 		private static void InternalOnValueInserted(object insertedValue)
 		{
-			var val = (User)insertedValue;
+			var val = (Message)insertedValue;
 			Id_Index[val.Id] = val;
 		}
 
 		private static void InternalOnValueDeleted(object deletedValue)
 		{
-			var val = (User)deletedValue;
+			var val = (Message)deletedValue;
 			Id_Index.Remove(val.Id);
 		}
 
@@ -36,62 +34,48 @@ namespace SpacetimeDB.Types
 			return SpacetimeDB.SATS.AlgebraicType.CreateProductType(new SpacetimeDB.SATS.ProductTypeElement[]
 			{
 				new SpacetimeDB.SATS.ProductTypeElement("id", SpacetimeDB.SATS.AlgebraicType.CreatePrimitiveType(SpacetimeDB.SATS.BuiltinType.Type.U32)),
-				new SpacetimeDB.SATS.ProductTypeElement("name", SpacetimeDB.SATS.AlgebraicType.CreatePrimitiveType(SpacetimeDB.SATS.BuiltinType.Type.String)),
-				new SpacetimeDB.SATS.ProductTypeElement("age", SpacetimeDB.SATS.AlgebraicType.CreatePrimitiveType(SpacetimeDB.SATS.BuiltinType.Type.U8)),
+				new SpacetimeDB.SATS.ProductTypeElement("text", SpacetimeDB.SATS.AlgebraicType.CreatePrimitiveType(SpacetimeDB.SATS.BuiltinType.Type.String)),
 			});
 		}
 
-		public static explicit operator User(SpacetimeDB.SATS.AlgebraicValue value)
+		public static explicit operator Message(SpacetimeDB.SATS.AlgebraicValue value)
 		{
 			if (value == null) {
 				return null;
 			}
 			var productValue = value.AsProductValue();
-			return new User
+			return new Message
 			{
 				Id = productValue.elements[0].AsU32(),
-				Name = productValue.elements[1].AsString(),
-				Age = productValue.elements[2].AsU8(),
+				Text = productValue.elements[1].AsString(),
 			};
 		}
 
-		public static System.Collections.Generic.IEnumerable<User> Iter()
+		public static System.Collections.Generic.IEnumerable<Message> Iter()
 		{
-			foreach(var entry in SpacetimeDBClient.clientDB.GetEntries("User"))
+			foreach(var entry in SpacetimeDBClient.clientDB.GetEntries("Message"))
 			{
-				yield return (User)entry.Item2;
+				yield return (Message)entry.Item2;
 			}
 		}
 		public static int Count()
 		{
-			return SpacetimeDBClient.clientDB.Count("User");
+			return SpacetimeDBClient.clientDB.Count("Message");
 		}
-		public static User FilterById(uint value)
+		public static Message FilterById(uint value)
 		{
 			Id_Index.TryGetValue(value, out var r);
 			return r;
 		}
 
-		public static System.Collections.Generic.IEnumerable<User> FilterByName(string value)
+		public static System.Collections.Generic.IEnumerable<Message> FilterByText(string value)
 		{
-			foreach(var entry in SpacetimeDBClient.clientDB.GetEntries("User"))
+			foreach(var entry in SpacetimeDBClient.clientDB.GetEntries("Message"))
 			{
 				var productValue = entry.Item1.AsProductValue();
 				var compareValue = (string)productValue.elements[1].AsString();
 				if (compareValue == value) {
-					yield return (User)entry.Item2;
-				}
-			}
-		}
-
-		public static System.Collections.Generic.IEnumerable<User> FilterByAge(byte value)
-		{
-			foreach(var entry in SpacetimeDBClient.clientDB.GetEntries("User"))
-			{
-				var productValue = entry.Item1.AsProductValue();
-				var compareValue = (byte)productValue.elements[2].AsU8();
-				if (compareValue == value) {
-					yield return (User)entry.Item2;
+					yield return (Message)entry.Item2;
 				}
 			}
 		}
@@ -113,10 +97,10 @@ namespace SpacetimeDB.Types
 			return t.product.elements[0].algebraicType;
 		}
 
-		public delegate void InsertEventHandler(User insertedValue, SpacetimeDB.Types.ReducerEvent dbEvent);
-		public delegate void UpdateEventHandler(User oldValue, User newValue, SpacetimeDB.Types.ReducerEvent dbEvent);
-		public delegate void DeleteEventHandler(User deletedValue, SpacetimeDB.Types.ReducerEvent dbEvent);
-		public delegate void RowUpdateEventHandler(SpacetimeDBClient.TableOp op, User oldValue, User newValue, SpacetimeDB.Types.ReducerEvent dbEvent);
+		public delegate void InsertEventHandler(Message insertedValue, SpacetimeDB.Types.ReducerEvent dbEvent);
+		public delegate void UpdateEventHandler(Message oldValue, Message newValue, SpacetimeDB.Types.ReducerEvent dbEvent);
+		public delegate void DeleteEventHandler(Message deletedValue, SpacetimeDB.Types.ReducerEvent dbEvent);
+		public delegate void RowUpdateEventHandler(SpacetimeDBClient.TableOp op, Message oldValue, Message newValue, SpacetimeDB.Types.ReducerEvent dbEvent);
 		public static event InsertEventHandler OnInsert;
 		public static event UpdateEventHandler OnUpdate;
 		public static event DeleteEventHandler OnBeforeDelete;
@@ -125,27 +109,27 @@ namespace SpacetimeDB.Types
 
 		public static void OnInsertEvent(object newValue, ClientApi.Event dbEvent)
 		{
-			OnInsert?.Invoke((User)newValue,(ReducerEvent)dbEvent?.FunctionCall.CallInfo);
+			OnInsert?.Invoke((Message)newValue,(ReducerEvent)dbEvent?.FunctionCall.CallInfo);
 		}
 
 		public static void OnUpdateEvent(object oldValue, object newValue, ClientApi.Event dbEvent)
 		{
-			OnUpdate?.Invoke((User)oldValue,(User)newValue,(ReducerEvent)dbEvent?.FunctionCall.CallInfo);
+			OnUpdate?.Invoke((Message)oldValue,(Message)newValue,(ReducerEvent)dbEvent?.FunctionCall.CallInfo);
 		}
 
 		public static void OnBeforeDeleteEvent(object oldValue, ClientApi.Event dbEvent)
 		{
-			OnBeforeDelete?.Invoke((User)oldValue,(ReducerEvent)dbEvent?.FunctionCall.CallInfo);
+			OnBeforeDelete?.Invoke((Message)oldValue,(ReducerEvent)dbEvent?.FunctionCall.CallInfo);
 		}
 
 		public static void OnDeleteEvent(object oldValue, ClientApi.Event dbEvent)
 		{
-			OnDelete?.Invoke((User)oldValue,(ReducerEvent)dbEvent?.FunctionCall.CallInfo);
+			OnDelete?.Invoke((Message)oldValue,(ReducerEvent)dbEvent?.FunctionCall.CallInfo);
 		}
 
 		public static void OnRowUpdateEvent(SpacetimeDBClient.TableOp op, object oldValue, object newValue, ClientApi.Event dbEvent)
 		{
-			OnRowUpdate?.Invoke(op, (User)oldValue,(User)newValue,(ReducerEvent)dbEvent?.FunctionCall.CallInfo);
+			OnRowUpdate?.Invoke(op, (Message)oldValue,(Message)newValue,(ReducerEvent)dbEvent?.FunctionCall.CallInfo);
 		}
 	}
 }

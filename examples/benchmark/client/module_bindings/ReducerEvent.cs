@@ -12,8 +12,8 @@ namespace SpacetimeDB.Types
 	{
 		None,
 		ClearAll,
-		Insert,
-		IterAll,
+		InsertAll,
+		Noop,
 	}
 
 	public partial class ReducerEvent : ReducerEventBase
@@ -34,20 +34,20 @@ namespace SpacetimeDB.Types
 				return (ClearAllArgsStruct)Args;
 			}
 		}
-		public InsertArgsStruct InsertArgs
+		public InsertAllArgsStruct InsertAllArgs
 		{
 			get
 			{
-				if (Reducer != ReducerType.Insert) throw new SpacetimeDB.ReducerMismatchException(Reducer.ToString(), "Insert");
-				return (InsertArgsStruct)Args;
+				if (Reducer != ReducerType.InsertAll) throw new SpacetimeDB.ReducerMismatchException(Reducer.ToString(), "InsertAll");
+				return (InsertAllArgsStruct)Args;
 			}
 		}
-		public IterAllArgsStruct IterAllArgs
+		public NoopArgsStruct NoopArgs
 		{
 			get
 			{
-				if (Reducer != ReducerType.IterAll) throw new SpacetimeDB.ReducerMismatchException(Reducer.ToString(), "IterAll");
-				return (IterAllArgsStruct)Args;
+				if (Reducer != ReducerType.Noop) throw new SpacetimeDB.ReducerMismatchException(Reducer.ToString(), "Noop");
+				return (NoopArgsStruct)Args;
 			}
 		}
 
@@ -61,18 +61,18 @@ namespace SpacetimeDB.Types
 					return new object[] {
 					};
 				}
-				case ReducerType.Insert:
+				case ReducerType.InsertAll:
 				{
-					var args = InsertArgs;
+					var args = InsertAllArgs;
 					return new object[] {
-						args.Name,
-						args.Age,
+						args.Count,
 					};
 				}
-				case ReducerType.IterAll:
+				case ReducerType.Noop:
 				{
-					var args = IterAllArgs;
+					var args = NoopArgs;
 					return new object[] {
+						args.Text,
 					};
 				}
 				default: throw new System.Exception($"Unhandled reducer case: {Reducer}. Please run SpacetimeDB code generator");

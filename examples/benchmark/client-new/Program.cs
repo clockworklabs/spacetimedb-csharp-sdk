@@ -1,17 +1,31 @@
-﻿using SpacetimeDB;
-using SpacetimeDB.Types;
+﻿using System;
 using System.Collections.Concurrent;
-using System;
 using System.Diagnostics;
+using SpacetimeDB;
+using SpacetimeDB.Types;
 
-static class Program {
-    enum NextTask {
+static class Program
+{
+    enum NextTask
+    {
         None,
         Subscribe,
         Insert,
         List,
         Clear,
         Disconnect,
+    }
+
+    readonly static Stopwatch stopwatch = new();
+
+    readonly static string[] testStrings = Enumerable.Range(0, count).Select(i => $"Test Msg{i,92}").ToArray();
+
+    const int count = 50000;
+
+    static void PrintSpeed(string msg, string unit)
+    {
+        var elapsed = stopwatch.Elapsed;
+        Console.WriteLine($"{msg}: {count / elapsed.TotalSeconds:N0} {unit}s/sec");
     }
 
     static void Main()
@@ -22,88 +36,87 @@ static class Program {
         SpacetimeDBClient.CreateInstance(new ConsoleLogger());
 
         var client = SpacetimeDBClient.instance;
-        var stopwatch = new Stopwatch();
-        var count = 50000;
-        var leftoverCount = count;
-        var nextTask = NextTask.None;
 
-        User.OnInsert += (user, dbEvent) => {
-            leftoverCount--;
-            if (leftoverCount == 0) {
-                stopwatch.Stop();
-                Console.WriteLine($"Insertion speed: {count / stopwatch.Elapsed.TotalSeconds:N0} items/sec");
-                nextTask = NextTask.List;
-            }
-        };
+        {
+            client.onConnect += () =>
+            {
+                Console.WriteLine("Connected; subscribing");
+                SpacetimeDBClient.instance.Subscribe(new List<string> { "SELECT * FROM Message" });
+            };
 
-        User.OnDelete += (user, dbEvent) => {
-            leftoverCount--;
-            if (leftoverCount == 0) {
-                stopwatch.Stop();
-                Console.WriteLine($"Deletion speed: {count / stopwatch.Elapsed.TotalSeconds:N0} items/sec");
-                nextTask = NextTask.Disconnect;
-            }
-        };
+            var subscribed = false;
 
-        client.onConnect += () => {
-            Console.WriteLine("Connected; subscribing");
-            nextTask = NextTask.Subscribe;
-        };
+            client.onSubscriptionApplied += () =>
+            {
+                Console.WriteLine("Subscribed; starting benchmarks");
+                subscribed = true;
+            };
 
-        client.onIdentityReceived += (authToken, identity, address) => {
-            Console.WriteLine("Received identity");
-            AuthToken.SaveToken(authToken);
-        };
-
-        client.onSubscriptionApplied += () => {
-            Console.WriteLine("Subscribed; starting benchmarks");
-            nextTask = NextTask.Insert;
-        };
-
-        new Thread(() => {
             client.Connect(AuthToken.Token, "http://localhost:3000", "benchmark");
-            while (nextTask != NextTask.Disconnect) {
-                switch (nextTask) {
-                    case NextTask.Subscribe:
-                        nextTask = NextTask.None;
-                        SpacetimeDBClient.instance.Subscribe(new List<string> { "SELECT * FROM User" });
-                        break;
-                    case NextTask.Insert:
-                        nextTask = NextTask.None;
-                        leftoverCount = count;
-                        var strings = new List<string>(count);
-                        for (var i = 0; i < count; i++) {
-                            // just an easy way to get short random alphabetical strings in C#
-                            strings.Add(Path.GetRandomFileName());
-                        }
-                        stopwatch.Restart();
-                        for (var i = 0; i < count; i++) {
-                            Reducer.Insert(strings[i], (byte)(i % 100));
-                        }
-                        break;
-                    case NextTask.List:
-                        stopwatch.Restart();
-                        var localCount = 100;
-                        for (var i = 0; i < localCount; i++) {
-                            // iterate with some arbitrary field filter
-                            foreach (var user in User.FilterByAge(50)) {
-                                GC.KeepAlive(user);
-                            }
-                        }
-                        stopwatch.Stop();
-                        Console.WriteLine($"Query speed: {(count * localCount) / stopwatch.Elapsed.TotalSeconds:N0} items/sec");
-                        nextTask = NextTask.Clear;
-                        break;
-                    case NextTask.Clear:
-                        nextTask = NextTask.None;
-                        leftoverCount = count;
-                        stopwatch.Restart();
-                        Reducer.ClearAll();
-                        break;
-                }
+
+            while (!subscribed)
+            {
                 client.Update();
             }
-            client.Close();
-        }).Start();
+        }
+
+        {
+            stopwatch.Restart();
+            foreach (var s in testStrings)
+            {
+                Reducer.Noop(s);
+            }
+            PrintSpeed("Reducer call speed", "call");
+        }
+
+        {
+            var leftoverCount = count;
+
+            Message.OnInsert += (message, dbEvent) =>
+            {
+                // Start counting inserts only from the first one to amortize reducer roundtrip
+                // (also because there is no way to wait for the previous noop reducer to finish
+                // because STDB only emits events for reducers that insert/delete items).
+                if (leftoverCount == count) {
+                    stopwatch.Restart();
+                }
+                if (--leftoverCount == 0)
+                {
+                    PrintSpeed("Insertion handling speed", "item");
+                }
+            };
+
+            Reducer.InsertAll(count);
+
+            while (leftoverCount > 0)
+            {
+                client.Update();
+            }
+        }
+
+        {
+            var leftoverCount = count;
+
+            Message.OnDelete += (message, dbEvent) =>
+            {
+                // Start counting inserts only from the first one to amortize reducer roundtrip.
+                if (leftoverCount == count) {
+                    stopwatch.Restart();
+                }
+                if (--leftoverCount == 0)
+                {
+                    PrintSpeed("Deletion handling speed", "item");
+                }
+            };
+
+            Reducer.ClearAll();
+
+            while (leftoverCount > 0)
+            {
+                client.Update();
+            }
+        }
+
+        client.Close();
     }
 }
