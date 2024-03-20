@@ -493,7 +493,8 @@ namespace SpacetimeDB
 
         private void OnMessageProcessCompleteUpdate(List<DbOp> dbOps, Event transactionEvent)
         {
-            // First trigger OnBeforeDelete
+            // First trigger OnBeforeDelete.
+            // TODO: can we merge this into the loop below?
             foreach (var update in dbOps)
             {
                 if (update.op == TableOp.Delete)
@@ -509,86 +510,52 @@ namespace SpacetimeDB
                 }
             }
 
-            void InternalDeleteCallback(DbOp op)
-            {
-                if (op.oldValue != null)
-                {
-                    op.oldValue.InternalOnValueDeleted();
-                }
-                else
-                {
-                    logger.LogError("Delete issued, but no value was present!");
-                }
-            }
-
-            void InternalInsertCallback(DbOp op)
-            {
-                if (op.newValue != null)
-                {
-                    op.newValue.InternalOnValueInserted();
-                }
-                else
-                {
-                    logger.LogError("Insert issued, but no value was present!");
-                }
-            }
-
             // Apply all of the state
             for (var i = 0; i < dbOps.Count; i++)
             {
                 // TODO: Reimplement updates when we add support for primary keys
-                var update = dbOps[i];
-                switch (update.op)
+                var dbOp = dbOps[i];
+                var setToNoChange = false;
+                if (dbOp.op == TableOp.Delete || dbOp.op == TableOp.Update)
                 {
-                    case TableOp.Delete:
-                        if (dbOps[i].table.DeleteEntry(update.deletedBytes))
+                    if (dbOps[i].table.DeleteEntry(dbOp.deletedBytes))
+                    {
+                        if (dbOp.oldValue != null)
                         {
-                            InternalDeleteCallback(update);
+                            dbOp.oldValue.InternalOnValueDeleted();
                         }
                         else
                         {
-                            var op = dbOps[i];
-                            op.op = TableOp.NoChange;
-                            dbOps[i] = op;
+                            logger.LogError("Delete issued, but no value was present!");
                         }
-                        break;
-                    case TableOp.Insert:
-                        if (dbOps[i].table.InsertEntry(update.insertedBytes, update.newValue))
+                    }
+                    else
+                    {
+                        setToNoChange = true;
+                    }
+                }
+                if (dbOp.op == TableOp.Insert || dbOp.op == TableOp.Update)
+                {
+                    if (dbOps[i].table.InsertEntry(dbOp.insertedBytes, dbOp.newValue))
+                    {
+                        if (dbOp.newValue != null)
                         {
-                            InternalInsertCallback(update);
+                            dbOp.newValue.InternalOnValueInserted();
                         }
                         else
                         {
-                            var op = dbOps[i];
-                            op.op = TableOp.NoChange;
-                            dbOps[i] = op;
+                            logger.LogError("Insert issued, but no value was present!");
                         }
-                        break;
-                    case TableOp.Update:
-                        if (dbOps[i].table.DeleteEntry(update.deletedBytes))
-                        {
-                            InternalDeleteCallback(update);
-                        }
-                        else
-                        {
-                            var op = dbOps[i];
-                            op.op = TableOp.NoChange;
-                            dbOps[i] = op;
-                        }
-
-                        if (dbOps[i].table.InsertEntry(update.insertedBytes, update.newValue))
-                        {
-                            InternalInsertCallback(update);
-                        }
-                        else
-                        {
-                            var op = dbOps[i];
-                            op.op = TableOp.NoChange;
-                            dbOps[i] = op;
-                        }
-                        break;
-                    default:
-                        throw new ArgumentOutOfRangeException();
+                    }
+                    else
+                    {
+                        setToNoChange = true;
+                    }
+                }
+                if (setToNoChange)
+                {
+                    dbOp.op = TableOp.NoChange;
+                    dbOps[i] = dbOp;
                 }
             }
 
@@ -642,11 +609,8 @@ namespace SpacetimeDB
                         }
                     case TableOp.Update:
                         {
-                            if (oldValue != null && newValue != null)
+                            if (oldValue is IDatabaseTableWithPrimaryKey oldValue_ && newValue is IDatabaseTableWithPrimaryKey newValue_)
                             {
-                                var oldValue_ = (IDatabaseTableWithPrimaryKey)oldValue;
-                                var newValue_ = (IDatabaseTableWithPrimaryKey)newValue;
-
                                 try
                                 {
                                     oldValue_.OnUpdateEvent(newValue_, transactionEvent);
