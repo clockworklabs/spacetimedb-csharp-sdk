@@ -531,6 +531,7 @@ namespace SpacetimeDB
                     }
                     else
                     {
+                        // TODO: why this isn't an error?
                         setToNoChange = true;
                     }
                 }
