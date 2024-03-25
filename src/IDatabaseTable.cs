@@ -38,7 +38,7 @@ namespace SpacetimeDB
 
         public delegate void InsertEventHandler(T insertedValue, ReducerEvent? dbEvent);
         public delegate void DeleteEventHandler(T deletedValue, ReducerEvent? dbEvent);
-        public delegate void RowUpdateEventHandler(SpacetimeDBClient.TableOp op, T? oldValue, T? newValue, ReducerEvent? dbEvent);
+        public delegate void RowUpdateEventHandler(SpacetimeDBClientBase.TableOp op, T? oldValue, T? newValue, ReducerEvent? dbEvent);
         public static event InsertEventHandler? OnInsert;
         public static event DeleteEventHandler? OnBeforeDelete;
         public static event DeleteEventHandler? OnDelete;
