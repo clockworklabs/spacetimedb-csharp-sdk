@@ -28,24 +28,5 @@ namespace SpacetimeDB
             return key;
         }
     }
-
-    public class NetworkManager : MonoBehaviour
-    {
-        protected void Awake()
-        {
-            // If you get a compile error on `Reducer`, that means you need to run the SpacetimeDB CLI generate command
-            SpacetimeDBClient.CreateInstance(new UnityDebugLogger());
-        }
-
-        private void OnDestroy()
-        {
-            SpacetimeDBClient.instance.Close();
-        }
-
-        private void Update()
-        {
-            SpacetimeDBClient.instance.Update();
-        }
-    }
 }
 #endif
