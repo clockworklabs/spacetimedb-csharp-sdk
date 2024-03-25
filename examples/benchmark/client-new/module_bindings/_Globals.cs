@@ -6,8 +6,6 @@
 
 using System;
 using SpacetimeDB;
-using System.Runtime.CompilerServices;
-using ClientApi;
 
 namespace SpacetimeDB.Types
 {
