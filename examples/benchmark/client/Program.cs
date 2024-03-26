@@ -32,16 +32,13 @@ static class Program
     {
         AuthToken.Init(".spacetime_csharp_quickstart");
 
-        // create the client, pass in a logger to see debug messages
-        SpacetimeDBClient.CreateInstance(new ConsoleLogger());
-
         var client = SpacetimeDBClient.instance;
 
         {
             client.onConnect += () =>
             {
                 Console.WriteLine("Connected; subscribing");
-                SpacetimeDBClient.instance.Subscribe(new List<string> { "SELECT * FROM Message" });
+                client.Subscribe(new List<string> { "SELECT * FROM Message" });
             };
 
             var subscribed = false;

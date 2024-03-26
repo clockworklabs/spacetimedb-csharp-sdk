@@ -32,9 +32,6 @@ static class Program
     {
         AuthToken.Init(".spacetime_csharp_quickstart");
 
-        // create the client, pass in a logger to see debug messages
-        SpacetimeDBClient.CreateInstance(new ConsoleLogger());
-
         var client = SpacetimeDBClient.instance;
 
         {
