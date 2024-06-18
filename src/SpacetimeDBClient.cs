@@ -624,7 +624,7 @@ namespace SpacetimeDB
             });
         }
 
-        public void Subscribe(List<string> queries)
+        public void Subscribe(params string[] queries)
         {
             if (!webSocket.IsConnected)
             {

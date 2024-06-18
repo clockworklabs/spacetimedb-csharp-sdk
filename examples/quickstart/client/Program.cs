@@ -113,7 +113,7 @@ void Reducer_OnSendMessageEvent(ReducerEvent reducerEvent, string text)
 
 void OnConnect()
 {
-    SpacetimeDBClient.instance.Subscribe(new List<string> { "SELECT * FROM User", "SELECT * FROM Message" });
+    SpacetimeDBClient.instance.Subscribe("SELECT * FROM User", "SELECT * FROM Message");
 }
 
 void OnIdentityReceived(string authToken, Identity identity, Address _address)
