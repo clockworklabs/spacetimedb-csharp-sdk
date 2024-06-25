@@ -9,6 +9,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using ClientApi;
 using SpacetimeDB.BSATN;
+using SpacetimeDB.Internal;
 using Thread = System.Threading.Thread;
 using Google.Protobuf;
 using Event = ClientApi.Event;
@@ -83,7 +84,7 @@ namespace SpacetimeDB
         public event Action<ClientApi.Event>? onEvent;
 
         public readonly Address clientAddress = Address.Random();
-        public Identity clientIdentity { get; private set; }
+        public Identity? clientIdentity { get; private set; }
 
         private SpacetimeDB.WebSocket webSocket;
         private bool connectionClosed;
