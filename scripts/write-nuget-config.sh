@@ -3,6 +3,7 @@ set -ueo pipefail
 SPACETIMEDB_REPO_PATH="$1"
 
 cd "$(dirname "$(readlink -f "$0")")"
+cd ..
 
 # Write out the nuget config file to `nuget.config`. This causes the spacetimedb-csharp-sdk repository
 # to be aware of the local versions of the `bindings-csharp` packages in SpacetimeDB, and use them if
