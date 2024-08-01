@@ -8,10 +8,13 @@ The `scripts/write-nuget-config.sh` script can generate the `nuget.config`. It t
 
 Then, you need to `dotnet pack` the `BSATN.Runtime` package in the `SpacetimeDB` repo.
 
+Lastly, before running `dotnet test`, you should `dotnet nuget locals all --clear` to clear out any cached packages. This ensures you're actually testing with the new package you just built.
+
 Example:
 ```bash
 $ export SPACETIMEDB_REPO_PATH="../SpacetimeDB"
 $ scripts/write-nuget-config.sh "${SPACETIMEDB_REPO_PATH}"
 $ ( cd "${SPACETIMEDB_REPO_PATH}"/crates/bindings-csharp/BSATN.Runtime && dotnet pack )
+$ dotnet nuget locals all --clear
 $ dotnet test
 ```
